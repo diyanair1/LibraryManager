@@ -11,9 +11,9 @@ A application to manage a book collection. This project combines core data struc
 - **Add/Remove Books** – Maintain your personal library
 - **Search Books** – Lookup by title or ISBN (partial or full)
 - **List Books** – View all books with sorting options
+- **Save/Load Collection** – Persist your data via file I/O
 <!-- - **Undo/Redo** – Reverse your recent actions -->
 <!-- - **Categorization** – Group books by genre -->
-- **Save/Load Collection** – Persist your data via file I/O
 
 
 ## 📦 Data Structures (In Development)
