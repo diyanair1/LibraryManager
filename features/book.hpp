@@ -14,12 +14,27 @@ class Book{
         Book(){
         }
         Book(int bid , string title, string author , string category, string status){
-            this -> bid = bid;
+            this -> bid = bid; // like self.something in python
             this -> title = title;
             this -> author = author;
             this -> category = category;
             this -> status = status;
         }
+        string get_title(){
+            return title;
+        }
+        string get_author(){
+            return author;
+        }
+
+        int get_bid(){
+            return bid;
+        }
+
+        void set_bid(int new_bid){
+            this -> bid = new_bid;
+        }
+
         void display(){
             //cout << title << author << ISBN << year << genre << endl;
             // cout << title << " by " << author << " (" << year << ") [ISBN: " << isbn << "] - Genre: " << genre << endl;
