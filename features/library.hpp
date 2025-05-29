@@ -136,12 +136,25 @@ class Library{
             }
         }
 
+        void merge(vector<Book>& library, int left, int mid, int right){
+            int n1 = (mid - left) +1; // left array size
+            int n2 =  (right - mid);  // right array size
+            vector <Book> L(n1);
+            vector <Book> R(n2); // vector of n2 Books initialised to null
+            for(int i = 0; i < n1; i++){
+                L[i] = library[left + i];
+            }
+            for(int i = 0; i < n2; i++){
+                R[i] = library[mid + i + 1];
+            }
+        }
+
         void merge_sort(vector<Book> library, int left, int right, string choice){ // left and right are extreme indexes
             if (left > right){     //if left = right, there is only 1 element
                 int mid = (left + right)/2;
                 merge_sort(library, left, mid, choice);
                 merge_sort(library, mid + 1, right, choice);
-                
+                merge(library, left, mid, right);
             }
         }
 
