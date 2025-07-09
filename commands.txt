@@ -1,0 +1,7 @@
+pip3 freeze > requirements.txt = is to store libraries and modules with their versions in the requirements.txt
+
+Virtual environement commands -
+
+VIRTUAL ENVIRONMENT CREATION -     python3 -m venv venv
+ACTIVATION COMMAND(for mac) -       source venv/bin/activate
+ACTIVATION COMMAND(for windows) -    venv\Scripts\activate
