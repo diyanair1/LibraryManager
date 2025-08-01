@@ -12,7 +12,8 @@ int main(){
     vector<Book>library; // Book class object is the type of data stored in the vector / a vector of book objects(as each book is an object from the Book class)
     Library l; // library object so that we can use the funtionalities needed for the library
     //Book b;
-    l.load_from_txt("data/books.txt" , library); 
+    //l.load_from_txt("data/books.txt" , library); 
+    l.load_from_db(library);
     // create a menu in a while loop with options
     /*
     example - if (choice == 1) {

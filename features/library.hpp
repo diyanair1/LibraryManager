@@ -9,6 +9,8 @@
 #include <algorithm>
 #include <cctype>
 #include <cstring>
+#include <pqxx/pqxx>
+#include <fmt/core.h> // module to import fomat
 //#include <bits/stdc++.h>
 using namespace std;
 
@@ -17,7 +19,30 @@ using namespace std;
 
 class Library{
     public:
-        void load_from_txt(const string& filename, vector<Book>& library){ // used to take data from books.txt to library vector
+        map<string, string> load_env(const string &filename){
+            map<string, string> env_variables; // type of a variable
+            ifstream file(filename); // a pointer to the file (in this case .env)
+            if(!file){ // if the pointer to the file has not been made(maybe because file doesnt exist or other errors)
+                cerr << "Could not open the requested file\n"; // giving an error message
+                return env_variables // returning an empty map
+            }
+            string line;
+            while(getline(file, line)){ // getting each line of the file(thru the file pointer)
+                if(line.empty() || line[0] == '#'){
+                    continue
+                } //if the line is either empty or is a comment, then continue
+                int pos = line.find('='); // finding the position of the = sign
+                if(pos != string::npos){ // if the pos is not at the end of the line(string::npos), then its in the middle
+                    string key = line.substr(0 , pos); // line.substr is to make a substring or to slice a part of the string
+                    string value = line.substr(pos +1);
+                    env_variables[key] = value;
+                }
+            }
+            file.close(); // closing the file
+            return env_variables; //returning the map
+        }
+    /*
+            void load_from_txt(const string& filename, vector<Book>& library){ // used to take data from books.txt to library vector
             // take input from book.txt, split it (w/commas)
             //  we pass by reference(&) so that it can be changed outside the funtion as well.
 
@@ -47,6 +72,40 @@ class Library{
                 // << "Status: " << status << endl;
             }
         }
+    */
+    //pqxx - this is a cpp library to connect to postgres
+        void load_from_db(vector<Book>& library){
+            try{
+                map<string, string> env_data  = load_env(".env");
+                string db_name = env_data["DB_NAME"];
+                string user = env_data["USER"];
+                string postgres_password = env_data["POSTGRES_PASSWORD"];
+                string host = env_data["HOST"];
+
+                pqxx::connection c( // using the connection class constructer of pqxx library, we are doing the connection wih our postgres database
+                fmt::format("dbname={} user={} password={} host={}" , db_name, user, postgres_password, host); // format is used to retrieve the values of variables needed to connect to db
+                );
+                pqxx::work txn(c); // starts a transaction block,which is important to do any interaction with the database
+                pqxx::result r = txn.exec("SELECT * FROM books"); // We are using the result func to exract and store the data in a variable(by executing an sql command)
+                for(auto row: r){ //it auto detects each row in the db(which is named "r")
+                    int bid = row["bid"]; //storing the bid value from row into int variable
+                    string title = row['title'];
+                    string author = row['author'];// note - make sure the value names are same as th db
+                    string category = row['category'];
+                    string status = row['status'];
+
+                    // as we now got all the values for the book, we are creating and object with the values retrieved
+                    Book newBook = Book(id, title, author, category, status); // Create Book object as we have got a value for each section(ex. bid, title, etc,.)
+                    library.push_back(newBook);
+                }
+                txn.commit(); // to seal the changes made to the db
+                cout << "data retrieved from db successfully!" << endl;
+            }
+            catch(const exception &e){ // if any of the lines in the try block fails - () storing a constant error from try block inside variable "e" (an exception is a class that contains all differnt types of errors)
+                cout << e.what() << endl; // we use the .what() func to view the error from object "e"
+            } 
+        }
+
 
         void add_book(vector<Book>& library){ // & is used to keep changes that are done in a funtions even after the funtion is passed
             int bid;
