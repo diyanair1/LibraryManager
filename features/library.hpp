@@ -24,12 +24,12 @@ class Library{
             ifstream file(filename); // a pointer to the file (in this case .env)
             if(!file){ // if the pointer to the file has not been made(maybe because file doesnt exist or other errors)
                 cerr << "Could not open the requested file\n"; // giving an error message
-                return env_variables // returning an empty map
+                return env_variables; // returning an empty map
             }
             string line;
             while(getline(file, line)){ // getting each line of the file(thru the file pointer)
                 if(line.empty() || line[0] == '#'){
-                    continue
+                    continue;
                 } //if the line is either empty or is a comment, then continue
                 int pos = line.find('='); // finding the position of the = sign
                 if(pos != string::npos){ // if the pos is not at the end of the line(string::npos), then its in the middle
@@ -83,19 +83,19 @@ class Library{
                 string host = env_data["HOST"];
 
                 pqxx::connection c( // using the connection class constructer of pqxx library, we are doing the connection wih our postgres database
-                fmt::format("dbname={} user={} password={} host={}" , db_name, user, postgres_password, host); // format is used to retrieve the values of variables needed to connect to db
+                fmt::format("dbname={} user={} password={} host={}" , db_name, user, postgres_password, host) // format is used to retrieve the values of variables needed to connect to db
                 );
                 pqxx::work txn(c); // starts a transaction block,which is important to do any interaction with the database
                 pqxx::result r = txn.exec("SELECT * FROM books"); // We are using the result func to exract and store the data in a variable(by executing an sql command)
                 for(auto row: r){ //it auto detects each row in the db(which is named "r")
-                    int bid = row["bid"]; //storing the bid value from row into int variable
-                    string title = row['title'];
-                    string author = row['author'];// note - make sure the value names are same as th db
-                    string category = row['category'];
-                    string status = row['status'];
+                    int bid = row["bid"].as<int>(); //storing the bid value from row into int variable
+                    string title = row["title"].as<string>();
+                    string author = row["author"].as<string>();// note - make sure the value names are same as th db
+                    string category = row["category"].as<string>();
+                    string status = row["status"].as<string>();
 
                     // as we now got all the values for the book, we are creating and object with the values retrieved
-                    Book newBook = Book(id, title, author, category, status); // Create Book object as we have got a value for each section(ex. bid, title, etc,.)
+                    Book newBook = Book(bid, title, author, category, status); // Create Book object as we have got a value for each section(ex. bid, title, etc,.)
                     library.push_back(newBook);
                 }
                 txn.commit(); // to seal the changes made to the db
