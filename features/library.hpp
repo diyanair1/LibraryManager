@@ -80,10 +80,11 @@ class Library{
                 string db_name = env_data["DB_NAME"];
                 string user = env_data["USER"];
                 string postgres_password = env_data["POSTGRES_PASSWORD"];
-                string host = env_data["HOST"];
+                string host = env_data["HOST"]; // kurian mama's library-core
+                int port = std::stoi(env_data["PORT"]);
 
                 pqxx::connection c( // using the connection class constructer of pqxx library, we are doing the connection wih our postgres database
-                fmt::format("dbname={} user={} password={} host={}" , db_name, user, postgres_password, host) // format is used to retrieve the values of variables needed to connect to db
+                fmt::format("dbname={} user={} password={} host={} port={}" , db_name, user, postgres_password, host, port) // format is used to retrieve the values of variables needed to connect to db
                 );
                 pqxx::work txn(c); // starts a transaction block,which is important to do any interaction with the database
                 pqxx::result r = txn.exec("SELECT * FROM books"); // We are using the result func to exract and store the data in a variable(by executing an sql command)
