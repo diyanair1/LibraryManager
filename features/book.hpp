@@ -29,6 +29,12 @@ class Book{
         string get_author(){
             return author;
         }
+        string get_category(){
+            return category;
+        }
+        string get_status(){
+            return status;
+        }
         int get_bid(){
             return bid;
         }

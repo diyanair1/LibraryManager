@@ -11,6 +11,7 @@
 #include <cstring>
 #include <pqxx/pqxx>
 #include <fmt/core.h> // module to import fomat
+#include <tuple>
 //#include <bits/stdc++.h>
 using namespace std;
 
@@ -74,18 +75,25 @@ class Library{
         }
     */
     //pqxx - this is a cpp library to connect to postgres
+        tuple<string, string, string, string, int> connect_to_db(){ // func which contains credentials in order to connect to the db
+            map<string, string> env_data  = load_env(".env");
+            string db_name = env_data["DB_NAME"];
+            string user = env_data["USER"];
+            string postgres_password = env_data["POSTGRES_PASSWORD"];
+            string host = env_data["HOST"]; // kurian mama's library-core
+            int port = std::stoi(env_data["PORT"]);
+
+            return make_tuple(db_name, user, postgres_password, host, port);
+            
+        }
+
         void load_from_db(vector<Book>& library){
             try{
-                map<string, string> env_data  = load_env(".env");
-                string db_name = env_data["DB_NAME"];
-                string user = env_data["USER"];
-                string postgres_password = env_data["POSTGRES_PASSWORD"];
-                string host = env_data["HOST"]; // kurian mama's library-core
-                int port = std::stoi(env_data["PORT"]);
-
+                auto [db_name, user, postgres_password, host, port] = connect_to_db(); // auto identifies the datatype of the variables
                 pqxx::connection c( // using the connection class constructer of pqxx library, we are doing the connection wih our postgres database
                 fmt::format("dbname={} user={} password={} host={} port={}" , db_name, user, postgres_password, host, port) // format is used to retrieve the values of variables needed to connect to db
                 );
+                //cout << typeid(c).name() << endl; //return the datatype of "c"
                 pqxx::work txn(c); // starts a transaction block,which is important to do any interaction with the database
                 pqxx::result r = txn.exec("SELECT * FROM books"); // We are using the result func to exract and store the data in a variable(by executing an sql command)
                 for(auto row: r){ //it auto detects each row in the db(which is named "r")
@@ -100,20 +108,19 @@ class Library{
                     library.push_back(newBook);
                 }
                 txn.commit(); // to seal the changes made to the db
-                cout << "data retrieved from db successfully!" << endl;
+                //cout << "data retrieved from db successfully!" << endl;
             }
             catch(const exception &e){ // if any of the lines in the try block fails - () storing a constant error from try block inside variable "e" (an exception is a class that contains all differnt types of errors)
                 cout << e.what() << endl; // we use the .what() func to view the error from object "e"
             } 
         }
 
-
         void add_book(vector<Book>& library){ // & is used to keep changes that are done in a funtions even after the funtion is passed
-            int bid;
+            // 1. create the new book object with user inputs
+
+            int bid = library.size()+2;
             string title, author, category, status;
             //bid,title,author,category,status
-            cout << "Enter BID:";// ???
-            cin >> bid;
             cin.ignore(); // Clear input buffer
 
             cout << "Enter Title: \n";
@@ -135,9 +142,37 @@ class Library{
             getline(cin, status);
 
             Book newBook = Book(bid, title, author, category, status); // Create Book object
-            library.push_back(newBook);
+            //library.push_back(newBook); // this adds book in the vector temporarily and not in the db
+
+            // 2. Connect to db
+
+            auto [db_name, user, postgres_password, host, port] = connect_to_db(); // auto identifies the datatype of the variables
+            pqxx::connection c( // using the connection class constructer of pqxx library, we are doing the connection wih our postgres database
+            fmt::format("dbname={} user={} password={} host={} port={}" , db_name, user, postgres_password, host, port) // format is used to retrieve the values of variables needed to connect to db
+            );
+
+            pqxx::work txn(c); // starts a transaction block,which is important to do any interaction with the database
             
+            // 3. inserting book object to the db using sql insert function
+
+            txn.exec(
+                "INSERT INTO books (bid, title, author, category, status) VALUES ($1, $2, $3, $4, $5)",
+                pqxx::params(bid, title, author, category, status)
+            );
+            // use insert command to add the new Book object as a row in our sql db table
+            
+            txn.commit(); // to seal the changes made to the db
+            //c.disconnect();
+            cout << "Book added to database successfully!\n";
+
+            // is this step nessesary?
+            library.push_back(newBook);
+
+            // displaying the added book
+            cout << "Successfully added the book. Book preview - \n";
+            newBook.display();
         }
+
         void list_library(vector<Book>& library){
             // displays all the books in the library line by line
             // library vector has to first be stored with data in books.txt 
@@ -154,7 +189,7 @@ class Library{
             return lower;
         }
 
-        void search_book(vector<Book>& library, string search_title){
+        void search_book(vector<Book>& library, string search_title){ // do i have to go into thee db and search or just in the vector?
             // LINEAR SEARCH
             // search_title = toLower(search_title);
             // bool found = false;
@@ -180,11 +215,11 @@ class Library{
             // mid = (0 + 5)// 2 = 2
 
 
-
-            search_title = toLower(search_title); // avaoioding case sensitivity issues
+            search_title = toLower(search_title); // avoiding case sensitivity issues
             //cout << search_title << endl;
             int low = 0; // left side
             int high = library.size()-1; // right side
+            bool found = false;
             while (low <= high){
                 //cout << "low: " << low << endl;
                 //cout << "high: " << high << endl;
@@ -200,6 +235,7 @@ class Library{
                     cout << "Book found!" << endl;
                     //cout << title << endl;
                     //cout << search_title << endl;
+                    found = true;
                     break;
                 }
                 else if(title > search_title){ // Being and Time > war and peace -------- z > a
@@ -209,6 +245,9 @@ class Library{
                     low = mid + 1; // shift to right chunk and discarding the left chunk
                 }
 
+            }
+            if (found == false){ // if the title wasnt found in the entie loop/library, print;
+                cout << "Book not found in library!" << endl;
             }
         }
         
@@ -220,18 +259,37 @@ class Library{
                 string title = book.get_title(); // the original title name
                 string lower_title = toLower(title); // lowercase version of title
 
-                toLower(book_name); // lowercase version of user input book name
+                string book_name_lower = toLower(book_name); // lowercase version of user input book name
 
                 int bid = book.get_bid() - 1; // accessing book using index
                 //string lower_title = transform(title.begin(), title.end(), title.begin(), tolower );
 
-                if (lower_title == book_name){
-                    library.erase(library.begin() + bid);
+                if (lower_title == book_name_lower){
+                    library.erase(library.begin() + bid); // this deletes the book object from only the vector
+
+                    // DELETING BOOK FROM DB
+                    // 2. Connect to db
+
+                    auto [db_name, user, postgres_password, host, port] = connect_to_db(); // auto identifies the datatype of the variables
+                    pqxx::connection c( // using the connection class constructer of pqxx library, we are doing the connection wih our postgres database
+                    fmt::format("dbname={} user={} password={} host={} port={}" , db_name, user, postgres_password, host, port) // format is used to retrieve the values of variables needed to connect to db
+                    );
+
+                    pqxx::work txn(c); // starts a transaction block,which is important to do any interaction with the database
+                
+                    string query = "DELETE FROM books WHERE title=" + txn.quote(title) + ";"; // sql query to delete a row from the postgres db
+                    cout << query << endl;
+                    txn.exec(query); // executing the sql query to delete row
+                    txn.commit();
+                    //c.disconnect();
+
+                    cout << "Book deleted successfully!" << endl;
+
                     update_id(library , bid);
                     break;
                 }
             }
-        }
+        }                                    
 
         void update_id(vector<Book>& library, int book_bid){
             if (book_bid != library.size() - 1){ //if it is not th last book, then;
@@ -253,7 +311,7 @@ class Library{
 
             while(i < n1 && j < n2){ // run until both left and right arrays have elements 
                 if (choice == "title"){
-                    if (left_sorted[i].get_title() < right_sorted[j].get_title()){ // compare with value comes first alphabetically, iTH value of L array or jTH value of R array
+                    if (toLower(left_sorted[i].get_title()) < toLower(right_sorted[j].get_title())){ // compare with value comes first alphabetically, iTH value of L array or jTH value of R array
                         result.push_back(left_sorted[i]); //push back the smaller value(alphabetically) into the result array
                         i++;
                     }
@@ -264,7 +322,7 @@ class Library{
                 }
 
                 else if(choice == "author"){
-                    if (left_sorted[i].get_author() < right_sorted[j].get_author()){
+                    if (toLower(left_sorted[i].get_author()) < toLower( right_sorted[j].get_author())){
                         result.push_back(left_sorted[i]);
                         i++;
                     }

@@ -3,6 +3,8 @@
 #include "features/book.hpp"
 #include "features/library.hpp"
 #include <vector>
+#include <limits>
+
 using namespace std;
 
 // in hpp files there will be only the class and no main funtion. ex - book.hpp & library.hpp
@@ -13,15 +15,17 @@ int main(){
     Library l; // library object so that we can use the funtionalities needed for the library
     //Book b;
     //l.load_from_txt("data/books.txt" , library); 
-    l.load_from_db(library);
     // create a menu in a while loop with options
     /*
     example - if (choice == 1) {
         addBook(library);
     }
     */
-    int choice;
+    int choice = 0;
+    l.load_from_db(library);
     while (choice != 6){
+        //l.load_from_db(library);
+
         // menu displaying
         cout << "\nLibrary Manager Menu:\n";
         cout << "1. Add a book\n"; // \n can be used instead of the endln() funtion.
@@ -37,7 +41,7 @@ int main(){
 
         if (choice == 1){
             l.add_book(library);
-            cout << "Successfully added the book. Book preview - \n";
+            //cout << "Successfully added the book. Book preview - \n";
             //how to display single book
             //b.display();
             //l.list_library(library);
@@ -49,7 +53,7 @@ int main(){
             cout << "Enter book name: " << endl;
             cin.ignore();
             getline(cin, title);
-            // need to storre sorted library in a variable to do binary search
+            // need to store sorted library in a variable to do binary search
             l.search_book(result, title); // using the sorted library("result") for the search funtion
         }
 
