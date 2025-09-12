@@ -59,9 +59,57 @@ http :: message_generator handle_requests(
             res.body() = error_json.dump(); //writing the error_json into the body
             res.prepare_payload(); // to say that headers are finalized and the response is ready
             return res;
+        };
+
+        auto const not_found = [&req](beast::string_view page){
+            http :: response<http::string_body>res{http::status::not_found, req.version()};
+            res.set(http::field::server, BOOST_BEAST_VERSION_STRING); // set a header value(for response) + version of boost beast in it
+            res.set(http::field::content_type, "application/json"); // set a header with content type in it
+            res.keep_alive(req.keep_alive()); // this says that as long as the the request is alive or active the reponse should also be "alive" or active
+            json error_json; // to store body
+            error_json["error"] = "The resource " + std::string(page) + " is not found";
+            res.body() = error_json.dump(); //writing the error_json into the body
+            res.prepare_payload(); // to say that headers are finalized and the response is ready
+            return res;
+        };
+
+        auto const server_error = [&req](beast::string_view what){
+            http :: response<http::string_body>res{http::status::internal_server_error, req.version()};
+            res.set(http::field::server, BOOST_BEAST_VERSION_STRING); // set a header value(for response) + version of boost beast in it
+            res.set(http::field::content_type, "application/json"); // set a header with content type in it
+            res.keep_alive(req.keep_alive()); // this says that as long as the the request is alive or active the reponse should also be "alive" or active
+            json error_json; // to store body
+            error_json["error"] = "An error occured: " + std::string(what);
+            res.body() = error_json.dump(); //writing the error_json into the body
+            res.prepare_payload(); // to say that headers are finalized and the response is ready
+            return res;
+        };
+
+        auto const success_res = [&req](const json& response_json){
+            http :: response<http::string_body>res{http::status::ok, req.version()};
+            res.set(http::field::server, BOOST_BEAST_VERSION_STRING); // set a header value(for response) + version of boost beast in it
+            res.set(http::field::content_type, "application/json"); // set a header with content type in it
+            res.keep_alive(req.keep_alive()); // this says that as long as the the request is alive or active the reponse should also be "alive" or active
+            res.body() = response_json.dump(); //writing the error_json into the body
+            res.prepare_payload(); // to say that headers are finalized and the response is ready
+            return res;
+        };
+
+        std::string target = std::string(req.target()); // target includes all endpoints(differentt url pages)
+
+        try{
+            if(req.method() == http::verb::get && target.find("/books/search")==0){ // if the target/endpoint for search book is found- 0 means the endpoint is found
+                int query_start = target.find("?title="); // position of the title, if present
+                if (query_start == std::string::npos){ // if there is no title in the the request
+
+                }
+            }
+
+
         }
-        //hw to make another error handling funtion like  - page not found
+        
     }
+
 
 
 
