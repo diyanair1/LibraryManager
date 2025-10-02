@@ -14,6 +14,10 @@ using namespace std;
 #include <thread>
 #include <cstdlib>
 
+Library lib;
+vector<Book> library_data;
+
+
 // SERIALIZING AND DESERIALIZING
 
 json book_to_json(Book& book){ // serializing each book
@@ -95,18 +99,37 @@ http :: message_generator handle_requests(
             return res;
         };
 
-        std::string target = std::string(req.target()); // target includes all endpoints(differentt url pages)
+        std::string target = std::string(req.target()); // target includes all endpoints(different url pages)
 
-        try{
+        try{ 
+            // SEARCH BOOK FUNCTION
             if(req.method() == http::verb::get && target.find("/books/search")==0){ // if the target/endpoint for search book is found- 0 means the endpoint is found
                 int query_start = target.find("?title="); // position of the title, if present
                 if (query_start == std::string::npos){ // if there is no title in the the request
-
+                    return bad_request("missing title");
                 }
+                std::string search_title = target.substr(query_start + 7);
+                vector<Book> sorted_lib = lib.sort_library(library_data, "title");
+                Book searched_book = lib.search_book(sorted_lib, search_title);
+                json response;
+                response["result"] = book_to_json(searched_book);
+                return success_res(response);
+            }
+            // ADD BOOK FUNCTION - hw
+            if(req.method() == http::verb::get && target.find("/books/add")==0){
+                //print book added successfully and book in json
+                //error can be invalid format/bad request
             }
 
+            //LIST LIBRARY FUNCTION - hw
+
+            //REMOVE BOOK
+            //error can be missing book/bad request
+            // not found
 
         }
+
+
         
     }
 

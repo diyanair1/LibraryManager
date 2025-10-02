@@ -189,7 +189,7 @@ class Library{
             return lower;
         }
 
-        void search_book(vector<Book>& library, string search_title){ // do i have to go into thee db and search or just in the vector?
+        Book search_book(vector<Book>& library, string search_title){ // do i have to go into thee db and search or just in the vector?
             // LINEAR SEARCH
             // search_title = toLower(search_title);
             // bool found = false;
@@ -236,7 +236,7 @@ class Library{
                     //cout << title << endl;
                     //cout << search_title << endl;
                     found = true;
-                    break;
+                    return book;
                 }
                 else if(title > search_title){ // Being and Time > war and peace -------- z > a
                     high = mid - 1; // shift to left chunk and discarding the right chunk
