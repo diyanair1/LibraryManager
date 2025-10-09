@@ -117,24 +117,44 @@ http :: message_generator handle_requests(
             }
             // ADD BOOK FUNCTION - hw
             if(req.method() == http::verb::get && target.find("/books/add")==0){
-                //print book added successfully and book in json
-                //error can be invalid format/bad request
+                try{
+                    json req_json = json::parse(req.body()); // getting the req body, convert it into json and store it
+                    int bid = library_data.size() + 1;
+                    string title = req_json["title"];
+                    string author = req_json["author"];
+                    string category = req_json["category"];
+                    string status = req_json["status"];
+
+                    bool success = lib.add_book(library_data, bid, title, author, category, status);
+                    if(success){
+                        json response;
+                        response["message"] = "Book added successfully!"
+                        Book new_book = Book(bid, title, author, category, status);
+                        response["book"] = book_to_json(new_book);
+                        return success_res(response);
+                    }
+                    else{
+                        return server_error("Database error when adding book.");
+                    }
+                }
+                catch(const exception& e){ // e stores the default error raised in the try block
+                    return bad_request(e.message()); // returning default given error
+                }
             }
 
-            //LIST LIBRARY FUNCTION - hw
+            //LIST BOOKS FUNCTION
+            if(req.method() == http::verb::get && target.find("/books/list")==0){  // check endpoint /books/list
+                // error handling
+                if(library_data.empty()){ 
+                    return bad_request("library is empty");
+                }
 
-            //REMOVE BOOK
-            //error can be missing book/bad request
-            // not found
+                //if the library data is not empty, then is has data which we need to list thru a response
+                json response;
+                response["message"] = "Library list"; 
+                response["books"] = books_to_json(library_data); 
 
+                return success_res(response);
+            }
         }
-
-
-        
     }
-
-
-
-
-
-

@@ -115,62 +115,67 @@ class Library{
             } 
         }
 
-        void add_book(vector<Book>& library){ // & is used to keep changes that are done in a funtions even after the funtion is passed
+        void add_book(vector<Book>& library , int bid, string title, string author, string category, string status){ // & is used to keep changes that are done in a funtions even after the funtion is passed
             // 1. create the new book object with user inputs
 
-            int bid = library.size()+2;
-            string title, author, category, status;
-            //bid,title,author,category,status
-            cin.ignore(); // Clear input buffer
+            // int bid = library.size()+2;
+            // string title, author, category, status;
+            // //bid,title,author,category,status
+            // cin.ignore(); // Clear input buffer
 
-            cout << "Enter Title: \n";
-            getline(cin,title); // or cin >> title; which both takes input
+            // cout << "Enter Title: \n";
+            // getline(cin,title); // or cin >> title; which both takes input
 
-            /*
-            The getline() function extracts characters from the input stream
-            and appends it to the string object until the delimiting character is encountered.
-            */
-            //first take every input, make book class object with those inputs and then push_back it into the library vector
-            // push on github and update when changes are made
-            cout << "Enter Author: \n";
-            getline(cin, author);
+            // /*
+            // The getline() function extracts characters from the input stream
+            // and appends it to the string object until the delimiting character is encountered.
+            // */
+            // //first take every input, make book class object with those inputs and then push_back it into the library vector
+            // // push on github and update when changes are made
+            // cout << "Enter Author: \n";
+            // getline(cin, author);
 
-            cout << "Enter category: \n";
-            getline(cin, category);
+            // cout << "Enter category: \n";
+            // getline(cin, category);
 
-            cout << "Enter status: ";
-            getline(cin, status);
+            // cout << "Enter status: ";
+            // getline(cin, status);
+            try{
+                Book newBook = Book(bid, title, author, category, status); // Create Book object
+                //library.push_back(newBook); // this adds book in the vector temporarily and not in the db
 
-            Book newBook = Book(bid, title, author, category, status); // Create Book object
-            //library.push_back(newBook); // this adds book in the vector temporarily and not in the db
+                // 2. Connect to db
 
-            // 2. Connect to db
+                auto [db_name, user, postgres_password, host, port] = connect_to_db(); // auto identifies the datatype of the variables
+                pqxx::connection c( // using the connection class constructer of pqxx library, we are doing the connection wih our postgres database
+                fmt::format("dbname={} user={} password={} host={} port={}" , db_name, user, postgres_password, host, port) // format is used to retrieve the values of variables needed to connect to db
+                );
 
-            auto [db_name, user, postgres_password, host, port] = connect_to_db(); // auto identifies the datatype of the variables
-            pqxx::connection c( // using the connection class constructer of pqxx library, we are doing the connection wih our postgres database
-            fmt::format("dbname={} user={} password={} host={} port={}" , db_name, user, postgres_password, host, port) // format is used to retrieve the values of variables needed to connect to db
-            );
+                pqxx::work txn(c); // starts a transaction block,which is important to do any interaction with the database
+                
+                // 3. inserting book object to the db using sql insert function
 
-            pqxx::work txn(c); // starts a transaction block,which is important to do any interaction with the database
-            
-            // 3. inserting book object to the db using sql insert function
+                txn.exec(
+                    "INSERT INTO books (bid, title, author, category, status) VALUES ($1, $2, $3, $4, $5)",
+                    pqxx::params(bid, title, author, category, status)
+                );
+                // use insert command to add the new Book object as a row in our sql db table
+                
+                txn.commit(); // to seal the changes made to the db
+                //c.disconnect();
+                //cout << "Book added to database successfully!\n";
 
-            txn.exec(
-                "INSERT INTO books (bid, title, author, category, status) VALUES ($1, $2, $3, $4, $5)",
-                pqxx::params(bid, title, author, category, status)
-            );
-            // use insert command to add the new Book object as a row in our sql db table
-            
-            txn.commit(); // to seal the changes made to the db
-            //c.disconnect();
-            cout << "Book added to database successfully!\n";
+                // is this step nessesary?
+                library.push_back(newBook);
 
-            // is this step nessesary?
-            library.push_back(newBook);
-
-            // displaying the added book
-            cout << "Successfully added the book. Book preview - \n";
-            newBook.display();
+                // displaying the added book
+                //cout << "Successfully added the book. Book preview - \n";
+                //newBook.display();
+                return true;
+            }
+            catch(const exception& e){
+                return false;
+            }
         }
 
         void list_library(vector<Book>& library){
