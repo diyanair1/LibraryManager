@@ -18,6 +18,7 @@
         "__split_buffer": "cpp",
         "list": "cpp",
         "string": "cpp",
-        "sstream": "cpp"
+        "sstream": "cpp",
+        "__locale": "cpp"
     }
 }

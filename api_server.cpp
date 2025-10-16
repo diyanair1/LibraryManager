@@ -52,7 +52,7 @@ Book json_to_book(json& j){ // deserializing each book
 
 template<class Body, class Allocator> // similar to a class and will contain funtions for different endpoints(like web pages) also handling different errors
 http :: message_generator handle_requests(
-    http :: request <Body, http :: basic_fields<Allocator>>&& req){
+    http :: request <Body, http :: basic_fields<Allocator>>&& req){ // all requests and funtions go under thiis
         auto const bad_request = [&req](beast :: string_view why){
             http :: response<http::string_body>res{http::status::bad_request, req.version()}; // body of the response will be a string - status::bad_request will get the status code for that status
             res.set(http::field::server, BOOST_BEAST_VERSION_STRING); // set a header value(for response) + version of boost beast in it
@@ -116,7 +116,7 @@ http :: message_generator handle_requests(
                 return success_res(response);
             }
             // ADD BOOK FUNCTION - hw
-            if(req.method() == http::verb::get && target.find("/books/add")==0){
+            if(req.method() == http::verb::add && target.find("/books/add")==0){
                 try{
                     json req_json = json::parse(req.body()); // getting the req body, convert it into json and store it
                     int bid = library_data.size() + 1;
@@ -156,5 +156,46 @@ http :: message_generator handle_requests(
 
                 return success_res(response);
             }
+
+            // REMOVE BOOK
+            if(req.method() == http::verb::delete_ && target.find("/books/remove")==0){
+                int query_start = target.find("?title="); // position of the book/title to remove, if present
+                if (query_start == std::string::npos){ // if there is no title in the the request
+                    return bad_request("missing title");
+                }
+                std::string remove_title = target.substr(query_start + 7);
+                Book book_to_delete = lib.search_book(library_data, title_to_delete); // get the deleted book's object using search func
+                
+                try{
+                    lib.remove_book(remove_title);
+                    json response;
+                    response["message"] = "Book removed successfully!";
+                    response["deleted_book"] = deleted_book_json; // display the deleted book object
+                    return success_res(response);
+                }
+                
+                catch{
+                    return server_error("Database error when removing book."); //internal error
+                }
+            }
+
+            // SORT LIBRARY
+            if(req.method() == http::verb::get && target.find("/books/sort")==0){
+                int query_start = target.find("?by="); // position of the book/title to remove, if present
+                if (query_start == std::string::npos){ // if there is no title in the the request
+                    return bad_request("missing sort choice");
+                }
+                std::string sort_choice = target.substr(query_start + 4);
+                if(sort_choice != "title" && sort_choice != "author"){
+                    return bad_request("Sort choice has to be by title or author");
+                }
+                vector<Book> sorted_lib = lib.sort_library(library_data, sort_choice);
+                json response;
+                json sorted_lib = books_to_json(sorted_lib);
+                response["message"] = "Sorted by " + sort_choice;
+                response["sorted_library"] = sorted_lib;
+                return success_res(response);
+            }
+
         }
     }
