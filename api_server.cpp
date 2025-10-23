@@ -120,7 +120,7 @@ http :: message_generator handle_requests(
                 response["result"] = book_to_json(searched_book);
                 return success_res(response);
             }
-            // ADD BOOK FUNCTION - hw
+            // ADD BOOK FUNCTION
             if(req.method() == http::verb::post && target.find("/books/add")==0){
                 try{
                     json req_json = json::parse(req.body()); // getting the req body, convert it into json and store it
@@ -206,3 +206,108 @@ http :: message_generator handle_requests(
             return server_error(e.what());
         }
     }
+
+void fail(beast::err_code ec, string what){
+    cerr << what << " : " << ec.message() << endl; //printing the error using c err
+}
+
+void do_session(tcp::socket& socket) {
+    beast::error_code ec;
+    beast::flat_buffer buffer; // making sort of a pipe where the data can flow through and satisfy request
+
+    for(;;) { // infinite loop
+        // Read a request
+        http::request<http::string_body> req; // reading request
+        http::read(socket, buffer, req, ec); // makes connection, pipe, reads request + gets error code in case of any error
+        if(ec == http::error::end_of_stream) // if the error code doesnt occur till the end of the stream
+            break;
+        if(ec)
+            return fail(ec, "read");
+
+        // Handle request
+        http::message_generator msg = handle_requests(std::move(req)); // by move(req) you are shifting the ownership of the request to the hande_requests for it to handle. req cannot be used after this.
+        // msg example : 
+        /*
+        HTTP/1.1 200 OK
+        Server: Boost.Beast/1.80.0
+        Content-Type: application/json
+        Content-Length: 123
+        Connection: keep-alive
+
+        {
+        "books": [
+            { "bid":1, "title":"Book A", "author":"Author A" },
+            { "bid":2, "title":"Book B", "author":"Author B" }
+        ],
+        "count": 2
+        }
+        */
+
+        // Determine if we should close the connection
+        bool keep_alive = msg.keep_alive();
+        
+        // Send the response
+        beast::write(socket, std::move(msg), ec);
+        if(ec)
+            return fail(ec, "write");
+        if(!keep_alive) {
+            break;
+        }
+    }
+
+    // Send a TCP shutdown
+    socket.shutdown(tcp::socket::shutdown_send, ec);
+}
+
+int main(int argc, char* argv[]) {
+    try {
+        // Default values
+        auto const address = net::ip::make_address("0.0.0.0");
+        auto const port = static_cast<unsigned short>(8080);
+        
+        if (argc == 3) {
+            // Custom address and port
+            auto const custom_address = net::ip::make_address(argv[1]);
+            auto const custom_port = static_cast<unsigned short>(std::atoi(argv[2]));
+            // Update address and port variables as needed
+        }
+
+        std::cout << "Loading library from database..." << std::endl;
+        lib.load_from_db(library_data);
+        std::cout << "Loaded " << library_data.size() << " books." << std::endl;
+
+        // The io_context is required for all I/O
+        net::io_context ioc{1};
+
+        // The acceptor receives incoming connections
+        tcp::acceptor acceptor{ioc, {address, port}};
+        
+        std::cout << "Library API Server running on http://" << address << ":" << port << std::endl;
+        std::cout << "Available endpoints:" << std::endl;
+        std::cout << "  GET    /books              - List all books" << std::endl;
+        std::cout << "  POST   /books              - Add a new book" << std::endl;
+        std::cout << "  GET    /books/search?title=<title> - Search books" << std::endl;
+        std::cout << "  DELETE /books/<id>         - Delete a book by ID" << std::endl;
+        std::cout << "  GET    /books/sort?by=<field> - Sort books (title/author)" << std::endl;
+        std::cout << "  POST   /books/reload       - Reload from database" << std::endl;
+
+        for(;;) {
+            // This will receive the new connection
+            tcp::socket socket{ioc};
+
+            // Block until we get a connection
+            acceptor.accept(socket);
+
+            // Launch the session, transferring ownership of the socket
+            std::thread{[&socket] { do_session(socket); }}.detach();
+        }
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return EXIT_FAILURE;
+    }
+}
+
+
+
+
