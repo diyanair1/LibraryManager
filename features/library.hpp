@@ -115,7 +115,7 @@ class Library{
             } 
         }
 
-        void add_book(vector<Book>& library , int bid, string title, string author, string category, string status){ // & is used to keep changes that are done in a funtions even after the funtion is passed
+        bool add_book(vector<Book>& library , int bid, string title, string author, string category, string status){ // & is used to keep changes that are done in a funtions even after the funtion is passed
             // 1. create the new book object with user inputs
 
             // int bid = library.size()+2;

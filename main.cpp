@@ -40,7 +40,32 @@ int main(){
         cin >> choice;
 
         if (choice == 1){
-            l.add_book(library);
+            // 1. Create the new book object with user inputs
+            int bid = library.size() + 2; // or another logic for ID
+            std::string title, author, category, status;
+
+            cin.ignore(); // Clear input buffer
+
+            cout << "Enter Title: ";
+            getline(cin, title);
+
+            cout << "Enter Author: ";
+            getline(cin, author);
+
+            cout << "Enter Category: ";
+            getline(cin, category);
+
+            cout << "Enter Status: ";
+            getline(cin, status);
+
+            // Add the book using all required arguments
+            l.add_book(library, bid, title, author, category, status);
+
+// Optional: display single book or whole library
+// b.display();
+// l.list_library(library);
+
+
             //cout << "Successfully added the book. Book preview - \n";
             //how to display single book
             //b.display();

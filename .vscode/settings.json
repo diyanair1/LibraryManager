@@ -19,6 +19,8 @@
         "list": "cpp",
         "string": "cpp",
         "sstream": "cpp",
-        "__locale": "cpp"
+        "__locale": "cpp",
+        "array": "cpp",
+        "complex": "cpp"
     }
 }

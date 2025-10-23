@@ -1,4 +1,4 @@
-using namespace std;
+
 #include <iostream> // used for input and output
 #include "features/book.hpp"
 #include "features/library.hpp"
@@ -13,6 +13,11 @@ using namespace std;
 #include <string>
 #include <thread>
 #include <cstdlib>
+namespace http = boost::beast::http;
+namespace beast = boost::beast;
+using json = nlohmann::json;
+using namespace std;
+
 
 Library lib;
 vector<Book> library_data;
@@ -40,7 +45,7 @@ json books_to_json(vector<Book>& library){ // serializing the books from cpp to 
 }
 
 Book json_to_book(json& j){ // deserializing each book
-    int bid = j.contains("bid") ? j["bid"] : -1; // .contains("bid") used to check if a value exists or not
+    int bid = j.contains("bid") ? j["bid"].get<int>() : -1; // .contains("bid") used to check if a value exists or not
     string title = j.contains("title") ? j["title"] : "";
     string author = j.contains("author") ? j["author"] : "";
     string category = j.contains("category") ? j["category"] : "";
@@ -116,7 +121,7 @@ http :: message_generator handle_requests(
                 return success_res(response);
             }
             // ADD BOOK FUNCTION - hw
-            if(req.method() == http::verb::add && target.find("/books/add")==0){
+            if(req.method() == http::verb::post && target.find("/books/add")==0){
                 try{
                     json req_json = json::parse(req.body()); // getting the req body, convert it into json and store it
                     int bid = library_data.size() + 1;
@@ -128,7 +133,7 @@ http :: message_generator handle_requests(
                     bool success = lib.add_book(library_data, bid, title, author, category, status);
                     if(success){
                         json response;
-                        response["message"] = "Book added successfully!"
+                        response["message"] = "Book added successfully!";
                         Book new_book = Book(bid, title, author, category, status);
                         response["book"] = book_to_json(new_book);
                         return success_res(response);
@@ -138,7 +143,7 @@ http :: message_generator handle_requests(
                     }
                 }
                 catch(const exception& e){ // e stores the default error raised in the try block
-                    return bad_request(e.message()); // returning default given error
+                    return bad_request(e.what()); // returning default given error
                 }
             }
 
@@ -164,17 +169,17 @@ http :: message_generator handle_requests(
                     return bad_request("missing title");
                 }
                 std::string remove_title = target.substr(query_start + 7);
-                Book book_to_delete = lib.search_book(library_data, title_to_delete); // get the deleted book's object using search func
+                Book book_to_delete = lib.search_book(library_data, remove_title); // get the deleted book's object using search func
                 
                 try{
-                    lib.remove_book(remove_title);
+                    lib.remove_book(library_data , remove_title);
                     json response;
                     response["message"] = "Book removed successfully!";
-                    response["deleted_book"] = deleted_book_json; // display the deleted book object
+                    response["deleted_book"] = book_to_json(book_to_delete); // display the deleted book object
                     return success_res(response);
                 }
                 
-                catch{
+                catch(const exception& e){
                     return server_error("Database error when removing book."); //internal error
                 }
             }
@@ -191,11 +196,13 @@ http :: message_generator handle_requests(
                 }
                 vector<Book> sorted_lib = lib.sort_library(library_data, sort_choice);
                 json response;
-                json sorted_lib = books_to_json(sorted_lib);
                 response["message"] = "Sorted by " + sort_choice;
-                response["sorted_library"] = sorted_lib;
+                response["sorted_library"] = books_to_json(sorted_lib);
                 return success_res(response);
             }
 
+        }
+        catch(const exception& e){
+            return server_error(e.what());
         }
     }

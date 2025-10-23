@@ -1,0 +1,3 @@
+/Users/mbpro/Desktop/library_manager/build/CMakeFiles/library_server.dir
+/Users/mbpro/Desktop/library_manager/build/CMakeFiles/edit_cache.dir
+/Users/mbpro/Desktop/library_manager/build/CMakeFiles/rebuild_cache.dir
